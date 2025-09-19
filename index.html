@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Renamer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Application Card -->
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg transition-all duration-300 transform scale-100 hover:scale-[1.01]">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Resume Renamer</h1>
+        <p class="text-center text-gray-500 mb-8">Quickly rename your resume files for different job applications.</p>
+        <p class="text-center text-xs text-gray-500 mb-4">Make sure your resume files are named `se_data.pdf` and `pm.pdf` and are in the same directory as this file.</p>
+
+        <!-- Input Fields -->
+        <div class="space-y-6">
+            <!-- Company and Posting Name inputs -->
+            <div>
+                <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input type="text" id="companyName" placeholder="e.g., Google" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+            </div>
+
+            <div>
+                <label for="postingName" class="block text-sm font-medium text-gray-700 mb-1">Posting Name</label>
+                <input type="text" id="postingName" placeholder="e.g., Software Engineering Internship" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+            </div>
+
+            <!-- Resume Type Selection -->
+            <div>
+                <label for="resumeType" class="block text-sm font-medium text-gray-700 mb-1">Resume Type</label>
+                <select id="resumeType" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <option value="software_engineering_data">Software/Data Engineering</option>
+                    <option value="product_management">Product Management</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="mt-8">
+            <button id="renameBtn" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-lg hover:bg-blue-700 transition duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Generate File Name & Download
+            </button>
+        </div>
+
+        <!-- Message/Error Box -->
+        <div id="messageBox" class="mt-6 p-4 rounded-lg text-sm hidden"></div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const companyNameInput = document.getElementById('companyName');
+            const postingNameInput = document.getElementById('postingName');
+            const resumeTypeSelect = document.getElementById('resumeType');
+            const renameBtn = document.getElementById('renameBtn');
+            const messageBox = document.getElementById('messageBox');
+
+            const resumes = {
+                software_engineering_data: {
+                    path: './se_data.pdf',
+                    extension: 'pdf'
+                },
+                product_management: {
+                    path: './pm.pdf',
+                    extension: 'pdf'
+                }
+            };
+
+            // Function to sanitize input and convert to snake_case
+            const toSnakeCase = (str) => {
+                if (!str) return '';
+                return str.toLowerCase()
+                          .replace(/\s+/g, '_')
+                          .replace(/[^a-z0-9_]+/g, '');
+            };
+
+            // Function to display messages to the user
+            const displayMessage = (message, type) => {
+                messageBox.textContent = message;
+                messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                } else if (type === 'success') {
+                    messageBox.classList.add('bg-green-100', 'text-green-700');
+                }
+            };
+
+            // Event listener for the main button
+            renameBtn.addEventListener('click', async () => {
+                const companyName = toSnakeCase(companyNameInput.value);
+                const postingName = toSnakeCase(postingNameInput.value);
+                const resumeType = resumeTypeSelect.value;
+                
+                // Validation
+                if (!companyName || !postingName) {
+                    displayMessage('Please enter both a company and posting name.', 'error');
+                    return;
+                }
+
+                const resumeData = resumes[resumeType];
+                
+                try {
+                    // Fetch the file from the local directory
+                    const response = await fetch(resumeData.path);
+                    if (!response.ok) {
+                        displayMessage(`Error: Could not find the ${resumeType} resume file. Make sure your file is named '${resumeData.path.substring(2)}' and is in the same folder as this HTML file.`, 'error');
+                        return;
+                    }
+                    
+                    const fileBlob = await response.blob();
+                    
+                    // Construct the full filename
+                    const newFileName = `${companyName}_${postingName}_${resumeType}_resume.${resumeData.extension}`;
+
+                    // Create a temporary URL for the file blob
+                    const fileURL = URL.createObjectURL(fileBlob);
+
+                    // Create and trigger a temporary download link
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = fileURL;
+                    downloadLink.download = newFileName;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    
+                    // Revoke the temporary URL to free up memory
+                    URL.revokeObjectURL(fileURL);
+                    
+                    displayMessage(`Your file has been renamed to "${newFileName}" and downloaded.`, 'success');
+                } catch (error) {
+                    console.error("Error during file download:", error);
+                    displayMessage('An error occurred while trying to download the file. Please check your file names.', 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
