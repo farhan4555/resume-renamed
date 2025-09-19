@@ -118,7 +118,7 @@
                     const fileBlob = await response.blob();
                     
                     // Construct the full filename
-                    const newFileName = `${companyName}_${postingName}_${resumeType}_resume.${resumeData.extension}`;
+                    const newFileName = `${companyName}_${postingName}_resume.${resumeData.extension}`;
 
                     // Create a temporary URL for the file blob
                     const fileURL = URL.createObjectURL(fileBlob);
